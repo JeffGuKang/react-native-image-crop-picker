@@ -91,6 +91,7 @@ RCT_EXPORT_MODULE();
                                 @"cropperChooseText": @"Choose"
                                 };
         self.compression = [[Compression alloc] init];
+        self.originalImageSize = CGSizeMake(200, 200);
     }
 
     return self;
@@ -187,6 +188,7 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
     UIImage *chosenImage = [info objectForKey:UIImagePickerControllerOriginalImage];
+    self.originalImageSize = chosenImage.size;
 
     NSDictionary *exif;
     if([[self.options objectForKey:@"includeExif"] boolValue]) {
@@ -699,7 +701,8 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         }]];
         return;
     }
-
+    
+    self.originalImageSize = image.size;
     NSLog(@"id: %@ filename: %@", localIdentifier, filename);
 
     if ([[[self options] objectForKey:@"cropping"] boolValue]) {
@@ -748,9 +751,15 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
 // Returns a custom rect for the mask.
 - (CGRect)imageCropViewControllerCustomMaskRect:
 (RSKImageCropViewController *)controller {
-    CGSize maskSize = CGSizeMake(
+    CGSize size = CGSizeMake(
                                  [[self.options objectForKey:@"width"] intValue],
                                  [[self.options objectForKey:@"height"] intValue]);
+    // For original dimension
+    if ([[self.options objectForKey:@"cropBasedOnOriginal"] boolValue]) {
+        size = self.originalImageSize;
+    }
+
+    CGSize maskSize = size;
 
     CGFloat viewWidth = CGRectGetWidth(controller.view.frame);
     CGFloat viewHeight = CGRectGetHeight(controller.view.frame);
